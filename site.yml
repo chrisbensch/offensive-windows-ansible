@@ -1,0 +1,8 @@
+---
+- name: Configure Windows Server
+  hosts: windows
+  tasks:
+    - name: Create a directory
+      win_file:
+        path: C:\example_directory
+        state: directory
