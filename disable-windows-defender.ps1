@@ -369,7 +369,7 @@ try {
     Write-Host "  • Cloud protection disabled" -ForegroundColor Cyan
     Write-Host "`n⚠️  IMPORTANT: " -ForegroundColor Red
     Write-Host "  • A registry backup was created: $($ScriptConfig.BackupFile)" -ForegroundColor Yellow
-    Write-Host "  • To restore: reg import \"$($ScriptConfig.BackupFile)\"" -ForegroundColor Yellow
+    Write-Host '  • To restore: reg import "$($ScriptConfig.BackupFile)"' -ForegroundColor Yellow
     Write-Host "  • System reboot may be required for all changes to take effect" -ForegroundColor Yellow
     Write-Host "  • Some changes may be reverted by Windows updates" -ForegroundColor Yellow
     Write-Host "`n==========================================`n" -ForegroundColor Green
