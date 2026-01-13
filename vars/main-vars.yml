@@ -1,0 +1,140 @@
+# vars/main-vars.yml
+# Main variables for offensive tools setup
+
+---
+# Chocolatey configuration
+chocolatey_install_path: "C:\\ProgramData\\chocolatey"
+chocolatey_temp_dir: "C:\\Windows\\Temp\\chocolatey"
+chocolatey_cache_dir: "C:\\ProgramData\\chocolatey\\cache"
+chocolatey_lib_dir: "C:\\ProgramData\\chocolatey\\lib"
+
+# Mandiant repository
+mandiant_repo_url: "https://www.myget.org/F/vm-packages/api/v2"
+mandiant_repo_name: "mandiant-vm-packages"
+mandiant_api_key: ""  # Add API key if available
+
+# Offensive tools configuration
+offensive_tools_dir: "C:\\OffensiveTools"
+tools_binaries_dir: "{{ offensive_tools_dir }}/Binaries"
+tools_scripts_dir: "{{ offensive_tools_dir }}/Scripts"
+tools_reports_dir: "{{ offensive_tools_dir }}/Reports"
+tools_captures_dir: "{{ offensive_tools_dir }}/Captures"
+tools_exploits_dir: "{{ offensive_tools_dir }}/Exploits"
+tools_payloads_dir: "{{ offensive_tools_dir }}/Payloads"
+
+# System configuration
+disable_defender: false  # Set to true for lab environments only
+reboot_required: true
+
+# Network configuration
+winrm_timeout: 3600
+winrm_read_timeout: 3600
+
+# Chocolatey settings
+chocolatey_allow_global_confirmation: true
+chocolatey_use_remembered_args: true
+chocolatey_command_timeout: 2700
+chocolatey_cache_location: "{{ chocolatey_cache_dir }}"
+
+# Tools list
+offensive_tools:
+  - name: "sysinternals"
+    description: "Sysinternals Suite"
+    category: "system"
+  - name: "wireshark"
+    description: "Network protocol analyzer"
+    category: "network"
+  - name: "nmap"
+    description: "Network mapper"
+    category: "network"
+  - name: "metasploit"
+    description: "Penetration testing framework"
+    category: "exploitation"
+  - name: "burpsuite"
+    description: "Web application security testing"
+    category: "web"
+  - name: "kali-linux-win-kex"
+    description: "Kali Linux Windows Subsystem"
+    category: "linux"
+  - name: "ghidra"
+    description: "Software reverse engineering"
+    category: "reverse"
+  - name: "ida-free"
+    description: "Interactive Disassembler"
+    category: "reverse"
+  - name: "radare2"
+    description: "Reverse engineering framework"
+    category: "reverse"
+  - name: "binwalk"
+    description: "Firmware analysis tool"
+    category: "forensics"
+  - name: "volatility"
+    description: "Memory forensics"
+    category: "forensics"
+  - name: "autopsy"
+    description: "Digital forensics"
+    category: "forensics"
+  - name: "ftk-imager"
+    description: "Forensic imaging"
+    category: "forensics"
+  - name: "regshot"
+    description: "Registry comparison"
+    category: "system"
+  - name: "process-hacker"
+    description: "Advanced process viewer"
+    category: "system"
+  - name: "procmon"
+    description: "Process Monitor"
+    category: "system"
+  - name: "procexp"
+    description: "Process Explorer"
+    category: "system"
+  - name: "autoruns"
+    description: "Autoruns analyzer"
+    category: "system"
+  - name: "tcpview"
+    description: "TCP/IP connections viewer"
+    category: "network"
+
+# Additional tools
+additional_tools:
+  - "git"
+  - "python"
+  - "powershell-core"
+  - "visualstudio2022buildtools"
+  - "visualstudio2022-workload-nativedesktop"
+  - "windows-sdk-10"
+  - "dotnet-6.0-runtime"
+  - "openjdk"
+  - "golang"
+  - "ruby"
+  - "nodejs"
+  - "docker-desktop"
+
+# PowerShell modules
+powershell_modules:
+  - "PowerSploit"
+  - "Nishang"
+  - "Empire"
+  - "PoshC2"
+  - "Invoke-Obfuscation"
+  - "Invoke-AtomicRedTeam"
+  - "BloodHound"
+  - "PowerView"
+  - "PowerUp"
+  - "Mimikatz"
+
+# Desktop shortcuts
+desktop_shortcuts:
+  - name: "Process Hacker"
+    src: "C:\\Program Files\\Process Hacker\\ProcessHacker.exe"
+  - name: "Wireshark"
+    src: "C:\\Program Files\\Wireshark\\Wireshark.exe"
+  - name: "Nmap"
+    src: "C:\\Program Files (x86)\\Nmap\\nmap.exe"
+  - name: "Offensive Tools"
+    src: "{{ offensive_tools_dir }}"
+  - name: "Metasploit"
+    src: "C:\\metasploit-framework\\msfconsole.bat"
+  - name: "Ghidra"
+    src: "C:\\ghidra\\ghidraRun.bat"

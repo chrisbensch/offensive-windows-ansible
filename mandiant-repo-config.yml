@@ -1,0 +1,64 @@
+# mandiant-repo-config.yml
+# Configuration for Mandiant VM packages repository
+
+---
+- name: Configure Mandiant Repository for Offensive Tools
+  hosts: windows
+  gather_facts: yes
+  become: yes
+  become_method: runas
+  become_user: SYSTEM
+
+  vars:
+    mandiant_repo_url: "https://www.myget.org/F/vm-packages/api/v2"
+    mandiant_repo_name: "mandiant-vm-packages"
+    mandiant_api_key: ""  # Add API key if available
+
+  tasks:
+    # Add Mandiant repository as a Chocolatey source
+    - name: Add Mandiant VM packages repository
+      win_chocolatey_source:
+        name: "{{ mandiant_repo_name }}"
+        source: "{{ mandiant_repo_url }}"
+        state: present
+        priority: 1
+        username: "{{ mandiant_api_key if mandiant_api_key else omit }}"
+        password: "{{ omit }}"
+
+    # Verify Mandiant repository is accessible
+    - name: Test Mandiant repository connectivity
+      win_uri:
+        url: "{{ mandiant_repo_url }}"
+        method: GET
+        validate_certs: no
+        timeout: 30
+      register: repo_test
+      until: repo_test.status == 200
+      retries: 3
+      delay: 10
+
+    # Configure Chocolatey to prioritize Mandiant repository
+    - name: Set Mandiant repository as primary source
+      win_chocolatey_config:
+        name: "sources"
+        value: "{{ mandiant_repo_name }}"
+        state: present
+
+    # Install Mandiant-specific packages
+    - name: Install Mandiant-specific tools
+      win_chocolatey:
+        name: "{{ item }}"
+        state: present
+        source: "{{ mandiant_repo_name }}"
+        install_args: "--allow-empty-checksums --ignore-checksums --force"
+      loop:
+        - mandiant-adversary-emulation
+        - mandiant-red-team-tools
+        - mandiant-flare-vm
+      ignore_errors: yes
+
+    # Display Mandiant repository information
+    - name: Display Mandiant repository information
+      win_msg:
+        title: "Mandiant Repository Configuration"
+        message: "Mandiant VM packages repository has been configured successfully."

@@ -1,0 +1,15 @@
+# requirements.yml
+# Ansible collection requirements for offensive-windows-ansible
+
+---
+collections:
+  - name: community.windows
+    version: ">=1.10.0"
+  - name: ansible.windows
+    version: ">=1.0.0"
+  - name: chocolatey.chocolatey
+    version: ">=1.1.0"
+
+roles:
+  - name: chocolatey.chocolatey.windows
+    version: ">=1.0.0"

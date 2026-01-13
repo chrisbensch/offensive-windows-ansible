@@ -1,0 +1,208 @@
+# offensive-tools-playbook.yml
+# Ansible playbook to install offensive security tools on Windows 11
+# Uses Chocolatey and Mandiant's VM packages repository
+
+---
+- name: Install Offensive Security Tools on Windows 11
+  hosts: windows
+  gather_facts: yes
+  become: yes
+  become_method: runas
+  become_user: SYSTEM
+
+  vars:
+    # Chocolatey settings
+    chocolatey_install_path: "C:\\ProgramData\\chocolatey"
+    chocolatey_temp_dir: "C:\\Windows\\Temp\\chocolatey"
+    
+    # Mandiant repository URL
+    mandiant_repo_url: "https://www.myget.org/F/vm-packages/api/v2"
+    
+    # List of offensive tools to install
+    offensive_tools:
+      - name: "sysinternals"
+        description: "Sysinternals Suite"
+      - name: "wireshark"
+        description: "Network protocol analyzer"
+      - name: "nmap"
+        description: "Network mapper"
+      - name: "metasploit"
+        description: "Penetration testing framework"
+      - name: "burpsuite"
+        description: "Web application security testing"
+      - name: "kali-linux-win-kex"
+        description: "Kali Linux Windows Subsystem"
+      - name: "ghidra"
+        description: "Software reverse engineering"
+      - name: "ida-free"
+        description: "Interactive Disassembler"
+      - name: "radare2"
+        description: "Reverse engineering framework"
+      - name: "binwalk"
+        description: "Firmware analysis tool"
+      - name: "volatility"
+        description: "Memory forensics"
+      - name: "autopsy"
+        description: "Digital forensics"
+      - name: "ftk-imager"
+        description: "Forensic imaging"
+      - name: "regshot"
+        description: "Registry comparison"
+      - name: "process-hacker"
+        description: "Advanced process viewer"
+      - name: "procmon"
+        description: "Process Monitor"
+      - name: "procexp"
+        description: "Process Explorer"
+      - name: "autoruns"
+        description: "Autoruns analyzer"
+      - name: "tcpview"
+        description: "TCP/IP connections viewer"
+
+  tasks:
+    # Task 1: Ensure Chocolatey is installed
+    - name: Ensure Chocolatey is installed
+      win_chocolatey:
+        name: chocolatey
+        state: present
+        chocolatey_download_url: "https://chocolatey.org/install.ps1"
+        chocolatey_install_args: "-Force"
+      register: chocolatey_install
+      until: chocolatey_install is succeeded
+      retries: 3
+      delay: 10
+
+    # Task 2: Add Mandiant repository source
+    - name: Add Mandiant VM packages repository
+      win_chocolatey_source:
+        name: "mandiant-vm-packages"
+        source: "{{ mandiant_repo_url }}"
+        state: present
+        priority: 1
+
+    # Task 3: Configure Chocolatey to allow global confirmation
+    - name: Configure Chocolatey features
+      win_chocolatey_feature:
+        name: "{{ item }}"
+        state: enabled
+      loop:
+        - allowGlobalConfirmation
+        - useRememberedArgumentsForUpgrades
+
+    # Task 4: Update Chocolatey to latest version
+    - name: Update Chocolatey to latest version
+      win_chocolatey:
+        name: chocolatey
+        state: latest
+        update: yes
+
+    # Task 5: Install offensive tools
+    - name: Install offensive security tools
+      win_chocolatey:
+        name: "{{ item.name }}"
+        state: present
+        source: "mandiant-vm-packages"
+        install_args: "--allow-empty-checksums --ignore-checksums"
+      loop: "{{ offensive_tools }}"
+      register: tool_installation
+      until: tool_installation is succeeded
+      retries: 2
+      delay: 5
+      ignore_errors: yes
+
+    # Task 6: Install additional tools from standard Chocolatey repo
+    - name: Install additional tools from standard Chocolatey repository
+      win_chocolatey:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - git
+        - python
+        - powershell-core
+        - visualstudio2022buildtools
+        - visualstudio2022-workload-nativedesktop
+        - windows-sdk-10
+        - dotnet-6.0-runtime
+        - openjdk
+        - golang
+        - ruby
+        - nodejs
+        - docker-desktop
+
+    # Task 7: Create tools directory structure
+    - name: Create offensive tools directory structure
+      win_file:
+        path: "C:\\OffensiveTools\\{{ item }}"
+        state: directory
+      loop:
+        - Binaries
+        - Scripts
+        - Reports
+        - Captures
+        - Exploits
+        - Payloads
+
+    # Task 8: Set environment variables for tools
+    - name: Add tools to system PATH
+      win_path:
+        name: PATH
+        elements:
+          - "C:\\OffensiveTools\\Binaries"
+          - "{{ chocolatey_install_path }}\\bin"
+        state: present
+        scope: machine
+
+    # Task 9: Install Windows Subsystem for Linux (WSL)
+    - name: Enable WSL feature
+      win_feature:
+        name: Microsoft-Windows-Subsystem-Linux
+        state: present
+      register: wsl_feature
+
+    - name: Enable Virtual Machine Platform feature
+      win_feature:
+        name: VirtualMachinePlatform
+        state: present
+      register: vm_platform_feature
+
+    - name: Reboot if WSL features were installed
+      win_reboot:
+        msg: "Rebooting to complete WSL installation"
+        pre_reboot_delay: 30
+      when: wsl_feature.changed or vm_platform_feature.changed
+
+    # Task 10: Install useful PowerShell modules
+    - name: Install PowerShell modules for offensive operations
+      win_psmodule:
+        name: "{{ item }}"
+        state: present
+        scope: AllUsers
+      loop:
+        - PowerSploit
+        - Nishang
+        - Empire
+        - PoshC2
+        - Invoke-Obfuscation
+        - Invoke-AtomicRedTeam
+        - BloodHound
+        - PowerView
+        - PowerUp
+        - Mimikatz
+
+    # Task 11: Create shortcuts for commonly used tools
+    - name: Create desktop shortcuts for offensive tools
+      win_shortcut:
+        src: "{{ item.src }}"
+        dest: "C:\\Users\\Public\\Desktop\\{{ item.name }}.lnk"
+        icon: "{{ item.icon | default(omit) }}"
+      loop:
+        - { name: "Process Hacker", src: "C:\\Program Files\\Process Hacker\\ProcessHacker.exe" }
+        - { name: "Wireshark", src: "C:\\Program Files\\Wireshark\\Wireshark.exe" }
+        - { name: "Nmap", src: "C:\\Program Files (x86)\\Nmap\\nmap.exe" }
+        - { name: "Offensive Tools", src: "C:\\OffensiveTools" }
+
+    # Task 12: Display completion message
+    - name: Display completion message
+      win_msg:
+        title: "Offensive Tools Installation Complete"
+        message: "Offensive security tools have been successfully installed on this Windows 11 system."

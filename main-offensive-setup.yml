@@ -1,0 +1,127 @@
+# main-offensive-setup.yml
+# Main playbook to set up offensive tools on Windows 11
+# Combines all configuration and installation steps
+
+---
+- name: Complete Offensive Tools Setup for Windows 11
+  hosts: windows
+  gather_facts: yes
+  become: yes
+  become_method: runas
+  become_user: SYSTEM
+
+  vars_files:
+    - vars/main-vars.yml
+
+  pre_tasks:
+    - name: Display setup information
+      win_msg:
+        title: "Offensive Tools Setup"
+        message: "Starting comprehensive offensive tools installation on Windows 11"
+
+    - name: Check system requirements
+      win_shell: |
+        $osInfo = Get-ComputerInfo | Select-Object OsName, OsVersion, OsArchitecture, TotalPhysicalMemory
+        Write-Output "OS: $($osInfo.OsName) $($osInfo.OsVersion)"
+        Write-Output "Architecture: $($osInfo.OsArchitecture)"
+        Write-Output "Memory: $([math]::Round($osInfo.TotalPhysicalMemory / 1GB, 2)) GB"
+      register: system_info
+      changed_when: false
+
+    - name: Display system information
+      debug:
+        msg: "{{ system_info.stdout_lines }}"
+
+  roles:
+    - role: chocolatey.chocolatey.windows
+      vars:
+        chocolatey_install_path: "{{ chocolatey_install_path }}"
+        chocolatey_temp_dir: "{{ chocolatey_temp_dir }}"
+
+  tasks:
+    # Import Chocolatey configuration
+    - name: Import Chocolatey configuration
+      import_tasks: chocolatey-config.yml
+
+    # Import Mandiant repository configuration
+    - name: Import Mandiant repository configuration
+      import_tasks: mandiant-repo-config.yml
+
+    # Import offensive tools installation
+    - name: Import offensive tools installation
+      import_tasks: offensive-tools-playbook.yml
+
+    # Additional post-installation tasks
+    - name: Create system restore point
+      win_restore_point:
+        description: "Before offensive tools installation"
+        state: present
+
+    - name: Disable Windows Defender (for lab environments only)
+      win_shell: |
+        Set-MpPreference -DisableRealtimeMonitoring $true
+        Set-MpPreference -DisableBehaviorMonitoring $true
+        Set-MpPreference -DisableIOAVProtection $true
+        Set-MpPreference -DisableScriptScanning $true
+        Set-MpPreference -DisableIntrusionPreventionSystem $true
+        Set-MpPreference -DisableScanOnRealtimeEnable $true
+        Set-MpPreference -DisableCatchupFullScan $true
+        Set-MpPreference -DisableCatchupQuickScan $true
+      when: disable_defender | default(false) | bool
+      tags: [defender, security]
+
+    - name: Configure Windows for offensive operations
+      win_shell: |
+        # Disable UAC
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -Value 0
+        
+        # Enable RDP
+        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        
+        # Configure PowerShell
+        Set-ExecutionPolicy Unrestricted -Scope LocalMachine -Force
+        
+        # Enable WinRM over HTTP (for testing)
+        Enable-PSRemoting -Force
+        Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*"
+      tags: [configuration, windows]
+
+    - name: Install additional useful tools
+      win_chocolatey:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - 7zip
+        - notepadplus
+        - vscode
+        - putty
+        - winscp
+        - keepass
+        - firefox
+        - googlechrome
+        - postman
+        - docker-desktop
+      tags: [additional, tools]
+
+  post_tasks:
+    - name: Display completion summary
+      win_msg:
+        title: "Setup Complete"
+        message: "Offensive tools installation completed successfully. System is ready for security testing."
+
+    - name: Create setup log
+      win_copy:
+        content: |
+          Offensive Tools Setup Completed: {{ ansible_date_time.iso8601 }}
+          System: {{ ansible_hostname }}
+          Tools Installed: {{ offensive_tools | map(attribute='name') | join(', ') }}
+          Chocolatey Version: {{ chocolatey_version | default('unknown') }}
+        dest: "C:\\OffensiveTools\\setup-log-{{ ansible_date_time.date }}.txt"
+
+    - name: Reboot system if needed
+      win_reboot:
+        msg: "Final reboot to complete installation"
+        pre_reboot_delay: 60
+        post_reboot_delay: 30
+      when: reboot_required | default(false) | bool

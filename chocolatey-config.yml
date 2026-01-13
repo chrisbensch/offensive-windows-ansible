@@ -1,0 +1,72 @@
+# chocolatey-config.yml
+# Configuration for Chocolatey package manager
+
+---
+- name: Configure Chocolatey for Offensive Tools Installation
+  hosts: windows
+  gather_facts: yes
+  become: yes
+  become_method: runas
+  become_user: SYSTEM
+
+  vars:
+    chocolatey_config_path: "C:\\ProgramData\\chocolatey\\config"
+    chocolatey_cache_path: "C:\\ProgramData\\chocolatey\\cache"
+    chocolatey_lib_path: "C:\\ProgramData\\chocolatey\\lib"
+
+  tasks:
+    # Ensure Chocolatey directories exist
+    - name: Ensure Chocolatey directories exist
+      win_file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ chocolatey_config_path }}"
+        - "{{ chocolatey_cache_path }}"
+        - "{{ chocolatey_lib_path }}"
+
+    # Configure Chocolatey global settings
+    - name: Configure Chocolatey global settings
+      win_chocolatey_config:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+      loop:
+        - { name: "cacheLocation", value: "{{ chocolatey_cache_path }}" }
+        - { name: "commandExecutionTimeoutSeconds", value: "2700" }
+        - { name: "allowGlobalConfirmation", value: "true" }
+        - { name: "useRememberedArgumentsForUpgrades", value: "true" }
+
+    # Set Chocolatey environment variables
+    - name: Set Chocolatey environment variables
+      win_environment:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        level: machine
+      loop:
+        - { name: "ChocolateyInstall", value: "C:\\ProgramData\\chocolatey" }
+        - { name: "ChocolateyToolsLocation", value: "C:\\tools" }
+
+    # Configure Chocolatey to ignore checksums for Mandiant packages
+    - name: Configure Chocolatey to allow insecure packages
+      win_chocolatey_feature:
+        name: "{{ item }}"
+        state: enabled
+      loop:
+        - allowEmptyChecksums
+        - ignoreInvalidOptionsSwitches
+
+    # Set execution policy for PowerShell
+    - name: Set PowerShell execution policy
+      win_shell: Set-ExecutionPolicy Bypass -Scope LocalMachine -Force
+      args:
+        executable: powershell.exe
+
+    # Configure Chocolatey to use TLS 1.2
+    - name: Configure Chocolatey to use TLS 1.2
+      win_shell: |
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Write-Output "TLS 1.2 configured for Chocolatey"
+      args:
+        executable: powershell.exe
